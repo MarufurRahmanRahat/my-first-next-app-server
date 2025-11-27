@@ -30,10 +30,70 @@ async function run() {
     await client.connect();
 
     // Database and Collections
-    const database = client.db("first-next-app-DB");
+    const database = client.db("eventHubDB");
     const eventsCollection = database.collection("events");
     const usersCollection = database.collection("users");
 
+      //All events
+     app.get('/api/events', async (req, res) => {
+      try {
+        const { search, category, limit } = req.query;
+        
+        let query = {};
+        
+        // Search by title
+        if (search) {
+          query.title = { $regex: search, $options: 'i' };
+        }
+        
+        // Filter by category
+        if (category && category !== 'all') {
+          query.category = category;
+        }
+
+        let events;
+        if (limit) {
+          events = await eventsCollection.find(query).limit(parseInt(limit)).toArray();
+        } else {
+          events = await eventsCollection.find(query).toArray();
+        }
+
+        res.status(200).json({ success: true, data: events });
+      } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+      }
+    });
+
+     //event details
+    app.get('/api/events/:id', async (req, res) => {
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const event = await eventsCollection.findOne(query);
+
+        if (!event) {
+          return res.status(404).json({ success: false, message: 'Event not found' });
+        }
+
+        res.status(200).json({ success: true, data: event });
+      } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+      }
+    });
+
+
+    //events by useremail
+    app.get('/api/events/user/:email', async (req, res) => {
+      try {
+        const email = req.params.email;
+        const query = { creatorEmail: email };
+        const events = await eventsCollection.find(query).toArray();
+
+        res.status(200).json({ success: true, data: events });
+      } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+      }
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
