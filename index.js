@@ -95,6 +95,76 @@ async function run() {
       }
     });
 
+    //adding new event
+    app.post('/api/events', async (req, res) => {
+      try {
+        const eventData = req.body;
+        
+        // Add timestamp and status
+        const newEvent = {
+          ...eventData,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          status: 'Active'
+        };
+
+        const result = await eventsCollection.insertOne(newEvent);
+
+        res.status(201).json({ 
+          success: true, 
+          message: 'Event created successfully',
+          data: { _id: result.insertedId, ...newEvent }
+        });
+      } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+      }
+    });
+
+    //updating event
+     app.put('/api/events/:id', async (req, res) => {
+      try {
+        const id = req.params.id;
+        const updateData = req.body;
+        
+        const filter = { _id: new ObjectId(id) };
+        const updateDoc = {
+          $set: {
+            ...updateData,
+            updatedAt: new Date()
+          }
+        };
+
+        const result = await eventsCollection.updateOne(filter, updateDoc);
+
+        if (result.matchedCount === 0) {
+          return res.status(404).json({ success: false, message: 'Event not found' });
+        }
+
+        res.status(200).json({ success: true, message: 'Event updated successfully' });
+      } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+      }
+    });
+
+    //deleting event
+    app.delete('/api/events/:id', async (req, res) => {
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await eventsCollection.deleteOne(query);
+
+        if (result.deletedCount === 0) {
+          return res.status(404).json({ success: false, message: 'Event not found' });
+        }
+
+        res.status(200).json({ success: true, message: 'Event deleted successfully' });
+      } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+      }
+    });
+
+    
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
