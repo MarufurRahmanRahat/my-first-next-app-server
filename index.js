@@ -57,7 +57,7 @@ async function run() {
         } else {
           events = await eventsCollection.find(query).toArray();
         }
-
+      
         res.status(200).json({ success: true, data: events });
       } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -163,7 +163,46 @@ async function run() {
       }
     });
 
-    
+
+    //adding users 
+    app.post('/api/users', async (req, res) => {
+      try {
+        const user = req.body;
+        const query = { email: user.email };
+        
+        const existingUser = await usersCollection.findOne(query);
+        
+        if (existingUser) {
+          return res.status(200).json({ success: true, message: 'User already exists', data: existingUser });
+        }
+
+        const result = await usersCollection.insertOne({
+          ...user,
+          createdAt: new Date()
+        });
+
+        res.status(201).json({ success: true, message: 'User created successfully', data: result });
+      } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+      }
+    });
+
+    //getting user by email
+     app.get('/api/users/:email', async (req, res) => {
+      try {
+        const email = req.params.email;
+        const user = await usersCollection.findOne({ email });
+
+        if (!user) {
+          return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        res.status(200).json({ success: true, data: user });
+      } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+      }
+    });
+
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
